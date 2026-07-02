@@ -31,7 +31,6 @@ Module.register("MMM-CurrentsNews", {
 		showDescription: true,
 		showSourceTitle: true,
 		showPublishDate: true,
-		truncDescription: 800,   // characters - CSS line-clamp handles visual cutoff, this is just a safety cap
 		wrapTitle: true,
 
 		layoutMode: "big",       // "compact" or "big" - matches MMM-MyPlex convention
@@ -142,9 +141,6 @@ Module.register("MMM-CurrentsNews", {
 
 		var article = this.newsItems[this.currentIndex];
 		var description = article.description || "";
-		if (this.config.truncDescription && description.length > this.config.truncDescription) {
-			description = description.substring(0, this.config.truncDescription).trim() + "...";
-		}
 
 		var publishDate = "";
 		if (article.published) {
