@@ -10,15 +10,12 @@
 	border-radius: 14px;
 	padding: 18px 22px;
 	box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
-	border-left: 4px solid rgba(255, 255, 255, 0.35);
 	max-width: 720px;
 	animation: currentsNewsFadeIn 600ms ease-out;
 }
 
 .currents-news-card.layout-right {
 	flex-direction: row-reverse;
-	border-left: none;
-	border-right: 4px solid rgba(255, 255, 255, 0.35);
 }
 
 .currents-news-card.compact {
