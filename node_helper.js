@@ -43,6 +43,18 @@ function parsePublishedMs(str) {
 	return NaN;
 }
 
+function hasValidImage(item) {
+	var img = item.image;
+	if (!img || typeof img !== "string") {
+		return false;
+	}
+	var trimmed = img.trim();
+	if (trimmed === "" || trimmed.toLowerCase() === "none" || trimmed.toLowerCase() === "null") {
+		return false;
+	}
+	return /^https?:\/\//i.test(trimmed);
+}
+
 module.exports = NodeHelper.create({
 
 	start: function () {
@@ -205,7 +217,12 @@ module.exports = NodeHelper.create({
 				return a.id || a.url;
 			});
 
+			var requireImage = config.articlesRequireImage !== "no";
+
 			newItems.forEach(function (a) {
+				if (requireImage && !hasValidImage(a)) {
+					return;
+				}
 				var key = a.id || a.url;
 				if (existingKeys.indexOf(key) === -1) {
 					self.pools[identifier].push(a);

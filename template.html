@@ -7,7 +7,7 @@
 		Loading news...
 	</div>
 {% elif article %}
-	<div class="currents-news-card {{ config.layoutMode }} layout-{{ cardLayout }}">
+	<div class="currents-news-card {{ config.layoutMode }} layout-{{ cardLayout }} orientation-{{ config.orientation }}">
 		{% if config.showImage and article.image %}
 			<div class="currents-news-image-wrapper">
 				<img class="currents-news-image" src="{{ article.image }}" />

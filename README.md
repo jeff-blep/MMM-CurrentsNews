@@ -64,6 +64,8 @@ so there are zero dependencies to install or go stale.
 | `wrapTitle` | `true` | Wrap long titles instead of clipping them. |
 | `layoutMode` | `"big"` | `"big"` (cinematic, large type/image) or `"compact"` (smaller footprint). Matches MMM-MyPlex's naming convention. |
 | `cardLayout` | `"auto"` | `"auto"` (image side follows module position - left region shows image on the left, right region shows it on the right), `"left"`, or `"right"`. |
+| `articlesRequireImage` | `"yes"` | `"yes"` or `"no"`. When `"yes"` (default), articles without a real image URL are filtered out entirely before entering the display pool. |
+| `orientation` | `"horizontal"` | `"horizontal"` (5 lines of description shown) or `"vertical"` (8 lines). Matches MMM-MyPlex's naming convention. |
 
 ### Canonical Currents categories
 

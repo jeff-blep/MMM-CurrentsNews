@@ -27,14 +27,16 @@ Module.register("MMM-CurrentsNews", {
 
 		maxNewsItems: 20,        // cap how many fetched articles we keep in rotation
 		showImage: true,
+		articlesRequireImage: "yes",   // "yes" or "no" - only display articles that have a real image
 		showDescription: true,
 		showSourceTitle: true,
 		showPublishDate: true,
-		truncDescription: 200,   // characters
+		truncDescription: 800,   // characters - CSS line-clamp handles visual cutoff, this is just a safety cap
 		wrapTitle: true,
 
 		layoutMode: "big",       // "compact" or "big" - matches MMM-MyPlex convention
 		cardLayout: "auto",      // "auto", "left", or "right" - image/text alignment
+		orientation: "horizontal", // "horizontal" (5 description lines) or "vertical" (8 lines)
 
 		apiBase: "https://api.currentsapi.services/v1",
 
