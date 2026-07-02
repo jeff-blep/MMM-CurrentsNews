@@ -25,8 +25,7 @@ module.exports = NodeHelper.create({
 		var self = this;
 
 		if (!config.apiKey) {
-			// The frontend already handles the missing-key message via
-			// getTemplateData, so just bail quietly here.
+			console.error("[MMM-CurrentsNews] No apiKey configured - skipping fetch.");
 			return;
 		}
 
@@ -61,6 +60,8 @@ module.exports = NodeHelper.create({
 			}
 		};
 
+		console.log("[MMM-CurrentsNews] Fetching: https://api.currentsapi.services" + requestPath);
+
 		var req = https.request(options, function (res) {
 			var body = "";
 
@@ -70,6 +71,7 @@ module.exports = NodeHelper.create({
 
 			res.on("end", function () {
 				if (res.statusCode < 200 || res.statusCode >= 300) {
+					console.error("[MMM-CurrentsNews] API error " + res.statusCode + ": " + body);
 					self.sendSocketNotification("CURRENTSNEWS_ERROR", {
 						identifier: identifier,
 						error: "Currents API returned status " + res.statusCode + ": " + body
@@ -81,6 +83,7 @@ module.exports = NodeHelper.create({
 					var data = JSON.parse(body);
 
 					if (data.status !== "ok" || !Array.isArray(data.news)) {
+						console.error("[MMM-CurrentsNews] Unexpected response shape: " + body.substring(0, 300));
 						self.sendSocketNotification("CURRENTSNEWS_ERROR", {
 							identifier: identifier,
 							error: "Unexpected response shape from Currents API"
@@ -88,7 +91,7 @@ module.exports = NodeHelper.create({
 						return;
 					}
 
-					var articles = data.news.slice(0, config.maxNewsItems || data.news.length).map(function (item) {
+					var articles = data.news.map(function (item) {
 						var sourceDomain = "";
 						try {
 							if (item.url) {
@@ -112,11 +115,28 @@ module.exports = NodeHelper.create({
 						};
 					});
 
+					// Currents' API only supports filtering by a single domain,
+					// so when the user wants a specific list of outlets (the old
+					// MMM-News "sources" behavior) we filter client-side instead.
+					if (Array.isArray(config.domains) && config.domains.length > 0) {
+						var wanted = config.domains.map(function (d) {
+							return d.toLowerCase().replace(/^www\./, "");
+						});
+						articles = articles.filter(function (a) {
+							return wanted.indexOf(a.sourceDomain.toLowerCase()) !== -1;
+						});
+					}
+
+					articles = articles.slice(0, config.maxNewsItems || articles.length);
+
+					console.log("[MMM-CurrentsNews] Fetched " + data.news.length + " articles, " + articles.length + " after filtering/trimming.");
+
 					self.sendSocketNotification("CURRENTSNEWS_RESULT", {
 						identifier: identifier,
 						articles: articles
 					});
 				} catch (err) {
+					console.error("[MMM-CurrentsNews] Failed to parse response: " + err.message);
 					self.sendSocketNotification("CURRENTSNEWS_ERROR", {
 						identifier: identifier,
 						error: "Failed to parse Currents API response: " + err.message
@@ -126,6 +146,7 @@ module.exports = NodeHelper.create({
 		});
 
 		req.on("error", function (err) {
+			console.error("[MMM-CurrentsNews] Request failed: " + err.message);
 			self.sendSocketNotification("CURRENTSNEWS_ERROR", {
 				identifier: identifier,
 				error: "Request to Currents API failed: " + err.message
