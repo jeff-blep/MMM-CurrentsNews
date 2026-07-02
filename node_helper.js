@@ -13,6 +13,7 @@ module.exports = NodeHelper.create({
 
 	start: function () {
 		console.log("Starting node_helper for module: " + this.name);
+		this.buffers = {}; // identifier -> array of accumulated articles
 	},
 
 	socketNotificationReceived: function (notification, payload) {
@@ -118,22 +119,54 @@ module.exports = NodeHelper.create({
 					// Currents' API only supports filtering by a single domain,
 					// so when the user wants a specific list of outlets (the old
 					// MMM-News "sources" behavior) we filter client-side instead.
+					// Matching allows subdomains (e.g. "edition.cnn.com" matches
+					// a configured "cnn.com") since outlets often serve under
+					// regional or product subdomains rather than the bare domain.
 					if (Array.isArray(config.domains) && config.domains.length > 0) {
 						var wanted = config.domains.map(function (d) {
 							return d.toLowerCase().replace(/^www\./, "");
 						});
 						articles = articles.filter(function (a) {
-							return wanted.indexOf(a.sourceDomain.toLowerCase()) !== -1;
+							var domain = a.sourceDomain.toLowerCase();
+							return wanted.some(function (w) {
+								return domain === w || domain.endsWith("." + w);
+							});
 						});
 					}
 
-					articles = articles.slice(0, config.maxNewsItems || articles.length);
+					var newCount = articles.length;
 
-					console.log("[MMM-CurrentsNews] Fetched " + data.news.length + " articles, " + articles.length + " after filtering/trimming.");
+					// Accumulate matches across fetches so a lean result (or a
+					// zero-match cycle, common with a narrow domain filter on
+					// the free tier's 20-article cap) doesn't wipe out articles
+					// we already found in earlier fetches.
+					if (!self.buffers[identifier]) {
+						self.buffers[identifier] = [];
+					}
+
+					var existingIds = self.buffers[identifier].map(function (a) {
+						return a.id || a.url;
+					});
+
+					articles.forEach(function (a) {
+						var key = a.id || a.url;
+						if (existingIds.indexOf(key) === -1) {
+							self.buffers[identifier].unshift(a);
+							existingIds.push(key);
+						}
+					});
+
+					var maxKeep = config.maxNewsItems || 20;
+					self.buffers[identifier] = self.buffers[identifier].slice(0, maxKeep);
+
+					var resultArticles = self.buffers[identifier];
+
+					console.log("[MMM-CurrentsNews] Fetched " + data.news.length + " articles, " +
+						newCount + " matched filter, " + resultArticles.length + " total in buffer.");
 
 					self.sendSocketNotification("CURRENTSNEWS_RESULT", {
 						identifier: identifier,
-						articles: articles
+						articles: resultArticles
 					});
 				} catch (err) {
 					console.error("[MMM-CurrentsNews] Failed to parse response: " + err.message);
