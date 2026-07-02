@@ -18,6 +18,7 @@ Module.register("MMM-CurrentsNews", {
 		category: "",            // e.g. "science_technology", "sport", "" for all
 		country: "",             // 2-letter country code, "" for all
 		language: "en",
+		domains: [],             // e.g. ["cnn.com","reuters.com"] - client-side filter, empty = no filter
 
 		pageSize: 20,            // how many articles to fetch per request
 		updateInterval: 60 * 30 * 1000,   // how often to re-fetch from the API (30 min default)
@@ -41,10 +42,8 @@ Module.register("MMM-CurrentsNews", {
 		return ["MMM-CurrentsNews.css"];
 	},
 
-	getTemplates: function () {
-		return {
-			newsTemplate: this.file(this.config.templateFile)
-		};
+	getTemplate: function () {
+		return this.config.templateFile;
 	},
 
 	start: function () {
@@ -166,15 +165,5 @@ Module.register("MMM-CurrentsNews", {
 			},
 			position: (this.currentIndex + 1) + " / " + this.newsItems.length
 		};
-	},
-
-	getDom: function () {
-		// getDom is required by MagicMirror core; templating is handled via
-		// nunjucks getTemplates()/getTemplateData() hooks above. This wrapper
-		// exists for modules that don't use nunjucks, but since we declared
-		// getTemplates(), MagicMirror will call the template renderer instead
-		// of this function for the visible DOM. Kept minimal for safety.
-		var wrapper = document.createElement("div");
-		return wrapper;
 	}
 });
