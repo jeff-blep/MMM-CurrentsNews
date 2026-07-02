@@ -1,0 +1,43 @@
+{% if error %}
+	<div class="currents-news-error dimmed light small">
+		{{ error }}
+	</div>
+{% elif not loaded %}
+	<div class="currents-news-loading dimmed light small">
+		Loading news...
+	</div>
+{% elif article %}
+	<div class="currents-news-wrapper">
+		{% if config.showImage and article.image %}
+			<div class="currents-news-image-wrapper">
+				<img class="currents-news-image" src="{{ article.image }}" />
+			</div>
+		{% endif %}
+
+		<div class="currents-news-text">
+			<div class="currents-news-title {% if config.wrapTitle %}wrap{% endif %}">
+				{{ article.title }}
+			</div>
+
+			{% if config.showDescription and article.description %}
+				<div class="currents-news-description small">
+					{{ article.description }}
+				</div>
+			{% endif %}
+
+			<div class="currents-news-meta xsmall dimmed">
+				{% if config.showSourceTitle and article.source %}
+					<span class="currents-news-source">{{ article.source }}</span>
+				{% endif %}
+				{% if config.showPublishDate and article.publishDate %}
+					<span class="currents-news-date">&nbsp;&middot;&nbsp;{{ article.publishDate }}</span>
+				{% endif %}
+				<span class="currents-news-position">&nbsp;&middot;&nbsp;{{ position }}</span>
+			</div>
+		</div>
+	</div>
+{% else %}
+	<div class="currents-news-empty dimmed light small">
+		No articles found for this configuration.
+	</div>
+{% endif %}

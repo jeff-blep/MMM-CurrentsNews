@@ -1,0 +1,15 @@
+{
+  "name": "MMM-CurrentsNews",
+  "version": "1.0.0",
+  "description": "MagicMirror2 module - real-time news via the Currents API (no 24-hour delay)",
+  "main": "MMM-CurrentsNews.js",
+  "keywords": [
+    "magic mirror",
+    "module",
+    "news",
+    "currents-api"
+  ],
+  "author": "Built with Claude for Jeff Kunkel",
+  "license": "MIT",
+  "dependencies": {}
+}
