@@ -1,24 +1,88 @@
-.currents-news-wrapper {
+/* MMM-CurrentsNews - cinematic card styling, matching the visual language
+ * of MMM-MyPlex (dark translucent card panel, generous type, poster/text
+ * split layout, subtle accent border).
+ */
+
+.currents-news-card {
 	display: flex;
 	align-items: flex-start;
-	max-width: 600px;
+	background: linear-gradient(135deg, rgba(20, 20, 22, 0.72), rgba(20, 20, 22, 0.4));
+	border-radius: 14px;
+	padding: 18px 22px;
+	box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+	border-left: 4px solid rgba(255, 255, 255, 0.35);
+	max-width: 720px;
+	animation: currentsNewsFadeIn 600ms ease-out;
+}
+
+.currents-news-card.layout-right {
+	flex-direction: row-reverse;
+	border-left: none;
+	border-right: 4px solid rgba(255, 255, 255, 0.35);
+}
+
+.currents-news-card.compact {
+	padding: 10px 14px;
+	border-radius: 10px;
+	max-width: 480px;
+}
+
+@keyframes currentsNewsFadeIn {
+	from { opacity: 0; transform: translateY(6px); }
+	to { opacity: 1; transform: translateY(0); }
 }
 
 .currents-news-image-wrapper {
 	flex-shrink: 0;
-	margin-right: 15px;
+	margin-right: 20px;
+}
+
+.currents-news-card.layout-right .currents-news-image-wrapper {
+	margin-right: 0;
+	margin-left: 20px;
+}
+
+.currents-news-card.compact .currents-news-image-wrapper {
+	margin-right: 12px;
+}
+
+.currents-news-card.compact.layout-right .currents-news-image-wrapper {
+	margin-right: 0;
+	margin-left: 12px;
 }
 
 .currents-news-image {
-	width: 100px;
-	height: 100px;
+	width: 150px;
+	height: 150px;
 	object-fit: cover;
-	border-radius: 4px;
+	border-radius: 10px;
+	display: block;
+}
+
+.currents-news-card.compact .currents-news-image {
+	width: 84px;
+	height: 84px;
+	border-radius: 6px;
+}
+
+.currents-news-text {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	min-width: 0;
 }
 
 .currents-news-title {
-	font-size: 22px;
-	line-height: 1.3;
+	font-size: 30px;
+	font-weight: 600;
+	line-height: 1.25;
+	color: #ffffff;
+	margin-bottom: 10px;
+	letter-spacing: 0.2px;
+}
+
+.currents-news-card.compact .currents-news-title {
+	font-size: 20px;
 	margin-bottom: 6px;
 }
 
@@ -27,12 +91,48 @@
 }
 
 .currents-news-description {
-	line-height: 1.4;
+	font-size: 17px;
+	line-height: 1.45;
+	color: rgba(255, 255, 255, 0.78);
+	margin-bottom: 12px;
+}
+
+.currents-news-card.compact .currents-news-description {
+	font-size: 13px;
 	margin-bottom: 6px;
 }
 
 .currents-news-meta {
-	opacity: 0.7;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 14px;
+}
+
+.currents-news-source-badge {
+	display: inline-block;
+	background: rgba(255, 255, 255, 0.12);
+	color: rgba(255, 255, 255, 0.9);
+	padding: 3px 10px;
+	border-radius: 999px;
+	font-weight: 600;
+	letter-spacing: 0.3px;
+	text-transform: uppercase;
+	font-size: 12px;
+}
+
+.currents-news-card.compact .currents-news-source-badge {
+	font-size: 10px;
+	padding: 2px 8px;
+}
+
+.currents-news-date {
+	color: rgba(255, 255, 255, 0.5);
+	font-size: 13px;
+}
+
+.currents-news-card.compact .currents-news-date {
+	font-size: 11px;
 }
 
 .currents-news-error,

@@ -33,6 +33,9 @@ Module.register("MMM-CurrentsNews", {
 		truncDescription: 200,   // characters
 		wrapTitle: true,
 
+		layoutMode: "big",       // "compact" or "big" - matches MMM-MyPlex convention
+		cardLayout: "auto",      // "auto", "left", or "right" - image/text alignment
+
 		apiBase: "https://api.currentsapi.services/v1",
 
 		templateFile: "template.html"
@@ -150,10 +153,17 @@ Module.register("MMM-CurrentsNews", {
 			}
 		}
 
+		var resolvedCardLayout = this.config.cardLayout;
+		if (resolvedCardLayout === "auto") {
+			var pos = this.data.position || "";
+			resolvedCardLayout = pos.indexOf("right") !== -1 ? "right" : "left";
+		}
+
 		return {
 			loaded: true,
 			error: null,
 			config: this.config,
+			cardLayout: resolvedCardLayout,
 			article: {
 				title: article.title,
 				description: description,
@@ -162,8 +172,7 @@ Module.register("MMM-CurrentsNews", {
 				author: article.author,
 				source: article.sourceDomain || (article.author || ""),
 				publishDate: publishDate
-			},
-			position: (this.currentIndex + 1) + " / " + this.newsItems.length
+			}
 		};
 	}
 });

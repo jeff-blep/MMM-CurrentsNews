@@ -49,6 +49,7 @@ so there are zero dependencies to install or go stale.
 | `keywords` | `""` | Search terms, only used when `mode: "search"`. |
 | `category` | `""` | One of Currents' canonical categories (see below). Empty = all categories. |
 | `country` | `""` | 2-letter country code. Empty = all countries. |
+| `domains` | `[]` | Array of source domains to keep, e.g. `["cnn.com","reuters.com"]`. Filtered client-side after fetching, since Currents only supports a single `domain` filter server-side. Empty = no filtering. |
 | `language` | `"en"` | Article language code. |
 | `pageSize` | `20` | Number of articles requested per API call. |
 | `maxNewsItems` | `20` | Max number of articles kept in the local rotation. |
@@ -61,6 +62,8 @@ so there are zero dependencies to install or go stale.
 | `showPublishDate` | `true` | Show a relative "x hours ago" timestamp. |
 | `truncDescription` | `200` | Max characters shown in the description before truncating. |
 | `wrapTitle` | `true` | Wrap long titles instead of clipping them. |
+| `layoutMode` | `"big"` | `"big"` (cinematic, large type/image) or `"compact"` (smaller footprint). Matches MMM-MyPlex's naming convention. |
+| `cardLayout` | `"auto"` | `"auto"` (image side follows module position - left region shows image on the left, right region shows it on the right), `"left"`, or `"right"`. |
 
 ### Canonical Currents categories
 
@@ -68,12 +71,45 @@ so there are zero dependencies to install or go stale.
 arts_culture_entertainment, lifestyle_leisure, human_interest, sport,
 crime_law_justice, education, environment, labour, health, automotive, real_estate`
 
+## Recency weighting
+
+Articles are pooled across fetch cycles (deduped, anything older than 24h
+is dropped from the pool). Each cycle, the display list is built favoring
+freshness: roughly the first half of `maxNewsItems` comes from articles
+published in the last 5 hours, the rest from the last 24 hours. If either
+window is thin, the module backfills from whatever's available rather than
+showing fewer articles than necessary.
+
 ## Rate limit math
 
 Free tier = 1,000 requests/day. This module only calls the API on `updateInterval`,
 not on `rotateInterval` (rotation just cycles through already-fetched articles
 client-side). At the default 30-minute `updateInterval`, that's 48 requests/day —
 plenty of headroom.
+
+## Using `domains` to mimic old "sources" filtering
+
+If you're replicating an old MMM-News config that filtered by named sources
+(e.g. `cnn, abc-news, reuters`), use `domains` with the actual domains instead:
+
+```js
+domains: ["cnn.com", "abcnews.go.com", "reuters.com", "bloomberg.com", "apnews.com"]
+```
+
+When `domains` is set, the module fires one request **per domain** (Currents
+supports server-side single-domain filtering), then merges and sorts the
+results by publish date. This guarantees relevant results instead of hoping
+your target outlets happen to show up in a random sample of Currents'
+120,000+ total sources.
+
+Rate limit math for this: N domains × (1440 min/day ÷ `updateInterval` in
+minutes) requests/day. Five domains at the default 30-minute interval is
+240 requests/day — well under the 1,000/day free cap. You could drop
+`updateInterval` to 10 minutes (720 requests/day) and still have headroom.
+
+Matched articles also accumulate into a rolling buffer (capped at
+`maxNewsItems`) across fetch cycles, so a temporarily thin result doesn't
+wipe out articles found in earlier cycles.
 
 ## Why this exists
 

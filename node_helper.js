@@ -7,19 +7,47 @@
  *
  * When config.domains is set, this fires one request PER domain (Currents
  * supports server-side single-domain filtering) rather than fetching a
- * generic feed and hoping the target outlets show up by chance. This
- * guarantees relevant results instead of gambling against a 120,000+
- * source firehose.
+ * generic feed and hoping the target outlets show up by chance.
+ *
+ * Articles are pooled across fetch cycles (deduped, capped at 24h old) and
+ * each cycle re-selects a display list favoring recency: roughly half from
+ * the last 5 hours, the rest from the last 24 hours, falling back gracefully
+ * if either window is thin.
  */
 
 const NodeHelper = require("node_helper");
 const https = require("https");
 
+var FIVE_HOURS_MS = 5 * 60 * 60 * 1000;
+var TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+var POOL_CAP = 150;
+
+function parsePublishedMs(str) {
+	if (!str) {
+		return NaN;
+	}
+	var t = Date.parse(str);
+	if (!isNaN(t)) {
+		return t;
+	}
+	// Fallback for "YYYY-MM-DD HH:mm:ss +ZZZZ" shape (space before offset,
+	// no colon in offset) which some environments' Date.parse rejects.
+	var m = str.match(/^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}) ([+-]\d{2})(\d{2})$/);
+	if (m) {
+		var iso = m[1] + "T" + m[2] + m[3] + ":" + m[4];
+		t = Date.parse(iso);
+		if (!isNaN(t)) {
+			return t;
+		}
+	}
+	return NaN;
+}
+
 module.exports = NodeHelper.create({
 
 	start: function () {
 		console.log("Starting node_helper for module: " + this.name);
-		this.buffers = {}; // identifier -> array of accumulated articles
+		this.pools = {}; // identifier -> deduped array of articles, capped at 24h old
 	},
 
 	socketNotificationReceived: function (notification, payload) {
@@ -140,7 +168,6 @@ module.exports = NodeHelper.create({
 			};
 		}
 
-		// Decide whether to do one generic fetch, or one fetch per domain.
 		var domains = Array.isArray(config.domains) && config.domains.length > 0 ? config.domains : null;
 		var requests;
 
@@ -149,7 +176,7 @@ module.exports = NodeHelper.create({
 				var path = basePath + "?" + buildParams(domain).join("&");
 				return doRequest(path).catch(function (err) {
 					console.error("[MMM-CurrentsNews] Domain '" + domain + "' fetch failed: " + err.message);
-					return []; // don't let one bad domain kill the whole cycle
+					return [];
 				});
 			});
 		} else {
@@ -162,46 +189,96 @@ module.exports = NodeHelper.create({
 
 		Promise.all(requests).then(function (resultsPerRequest) {
 			var rawCount = 0;
-			var allItems = [];
+			var newItems = [];
 			resultsPerRequest.forEach(function (items) {
 				rawCount += items.length;
 				items.forEach(function (item) {
-					allItems.push(normalize(item));
+					newItems.push(normalize(item));
 				});
 			});
 
-			// Sort newest-first across merged domain results.
-			allItems.sort(function (a, b) {
-				return new Date(b.published) - new Date(a.published);
-			});
-
-			if (!self.buffers[identifier]) {
-				self.buffers[identifier] = [];
+			if (!self.pools[identifier]) {
+				self.pools[identifier] = [];
 			}
 
-			var existingKeys = self.buffers[identifier].map(function (a) {
+			var existingKeys = self.pools[identifier].map(function (a) {
 				return a.id || a.url;
 			});
 
-			allItems.forEach(function (a) {
+			newItems.forEach(function (a) {
 				var key = a.id || a.url;
 				if (existingKeys.indexOf(key) === -1) {
-					self.buffers[identifier].unshift(a);
+					self.pools[identifier].push(a);
 					existingKeys.push(key);
 				}
 			});
 
-			var maxKeep = config.maxNewsItems || 20;
-			self.buffers[identifier] = self.buffers[identifier].slice(0, maxKeep);
+			var now = Date.now();
 
-			var resultArticles = self.buffers[identifier];
+			function ageMs(a) {
+				var t = parsePublishedMs(a.published);
+				return isNaN(t) ? Infinity : (now - t);
+			}
+
+			// Drop anything older than 24h from the pool - permanently
+			// irrelevant for a "recent headlines" display, and keeps the
+			// pool from growing forever. Keep undated items (rare) at
+			// lowest priority rather than dropping outright.
+			self.pools[identifier] = self.pools[identifier].filter(function (a) {
+				var age = ageMs(a);
+				return age <= TWENTY_FOUR_HOURS_MS;
+			});
+
+			// Bound pool size defensively, keeping the newest.
+			self.pools[identifier].sort(function (a, b) { return ageMs(a) - ageMs(b); });
+			self.pools[identifier] = self.pools[identifier].slice(0, POOL_CAP);
+
+			var pool = self.pools[identifier];
+			var targetTotal = config.maxNewsItems || 20;
+			var halfTarget = Math.ceil(targetTotal / 2);
+
+			var recentPool = pool.filter(function (a) { return ageMs(a) <= FIVE_HOURS_MS; });
+			var midPool = pool.filter(function (a) { return ageMs(a) > FIVE_HOURS_MS && ageMs(a) <= TWENTY_FOUR_HOURS_MS; });
+
+			var selected = recentPool.slice(0, halfTarget);
+
+			function usedKeys() {
+				return selected.map(function (a) { return a.id || a.url; });
+			}
+
+			var remaining = targetTotal - selected.length;
+			if (remaining > 0) {
+				selected = selected.concat(midPool.slice(0, remaining));
+			}
+
+			remaining = targetTotal - selected.length;
+			if (remaining > 0) {
+				var keys = usedKeys();
+				var leftoverRecent = recentPool.filter(function (a) {
+					return keys.indexOf(a.id || a.url) === -1;
+				});
+				selected = selected.concat(leftoverRecent.slice(0, remaining));
+			}
+
+			remaining = targetTotal - selected.length;
+			if (remaining > 0) {
+				var keys2 = usedKeys();
+				var leftoverMid = midPool.filter(function (a) {
+					return keys2.indexOf(a.id || a.url) === -1;
+				});
+				selected = selected.concat(leftoverMid.slice(0, remaining));
+			}
+
+			// Final display order: newest first.
+			selected.sort(function (a, b) { return ageMs(a) - ageMs(b); });
 
 			console.log("[MMM-CurrentsNews] " + (domains ? domains.length + " domain requests" : "1 generic request") +
-				", " + rawCount + " raw articles, " + resultArticles.length + " total in buffer.");
+				", " + rawCount + " raw, " + pool.length + " in 24h pool, " +
+				recentPool.length + " under 5h, " + selected.length + " selected for display.");
 
 			self.sendSocketNotification("CURRENTSNEWS_RESULT", {
 				identifier: identifier,
-				articles: resultArticles
+				articles: selected
 			});
 		}).catch(function (err) {
 			console.error("[MMM-CurrentsNews] Unexpected fetch pipeline error: " + err.message);

@@ -7,7 +7,7 @@
 		Loading news...
 	</div>
 {% elif article %}
-	<div class="currents-news-wrapper">
+	<div class="currents-news-card {{ config.layoutMode }} layout-{{ cardLayout }}">
 		{% if config.showImage and article.image %}
 			<div class="currents-news-image-wrapper">
 				<img class="currents-news-image" src="{{ article.image }}" />
@@ -20,19 +20,18 @@
 			</div>
 
 			{% if config.showDescription and article.description %}
-				<div class="currents-news-description small">
+				<div class="currents-news-description">
 					{{ article.description }}
 				</div>
 			{% endif %}
 
-			<div class="currents-news-meta xsmall dimmed">
+			<div class="currents-news-meta">
 				{% if config.showSourceTitle and article.source %}
-					<span class="currents-news-source">{{ article.source }}</span>
+					<span class="currents-news-source-badge">{{ article.source }}</span>
 				{% endif %}
 				{% if config.showPublishDate and article.publishDate %}
-					<span class="currents-news-date">&nbsp;&middot;&nbsp;{{ article.publishDate }}</span>
+					<span class="currents-news-date">{{ article.publishDate }}</span>
 				{% endif %}
-				<span class="currents-news-position">&nbsp;&middot;&nbsp;{{ position }}</span>
 			</div>
 		</div>
 	</div>
