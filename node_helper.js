@@ -56,6 +56,7 @@ module.exports = NodeHelper.create({
 			hostname: "api.currentsapi.services",
 			path: requestPath,
 			method: "GET",
+			family: 4,   // force IPv4 - avoids AggregateError on networks with no IPv6 route
 			headers: {
 				Authorization: config.apiKey
 			}
@@ -63,8 +64,7 @@ module.exports = NodeHelper.create({
 
 		console.log("[MMM-CurrentsNews] Fetching: https://api.currentsapi.services" + requestPath);
 
-		var req = https.request(options, function (res) {
-			var body = "";
+		var req = https.request(options, function (res) {			var body = "";
 
 			res.on("data", function (chunk) {
 				body += chunk;
@@ -179,11 +179,25 @@ module.exports = NodeHelper.create({
 		});
 
 		req.on("error", function (err) {
-			console.error("[MMM-CurrentsNews] Request failed: " + err.message);
+			var details = err.message || "(no message)";
+			if (err.code) {
+				details += " [code: " + err.code + "]";
+			}
+			if (Array.isArray(err.errors) && err.errors.length > 0) {
+				details += " - nested: " + err.errors.map(function (e) {
+					return (e.code || "") + " " + (e.message || "");
+				}).join(" | ");
+			}
+			console.error("[MMM-CurrentsNews] Request failed: " + details);
 			self.sendSocketNotification("CURRENTSNEWS_ERROR", {
 				identifier: identifier,
-				error: "Request to Currents API failed: " + err.message
+				error: "Request to Currents API failed: " + details
 			});
+		});
+
+		req.setTimeout(15000, function () {
+			console.error("[MMM-CurrentsNews] Request timed out after 15s");
+			req.destroy(new Error("Request timed out after 15s"));
 		});
 
 		req.end();
