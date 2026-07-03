@@ -32,7 +32,7 @@ so there are zero dependencies to install or go stale.
         category: "science_technology",
         country: "",
         language: "en",
-        rotateInterval: 1000 * 15,
+        slideDuration: 20,
         updateInterval: 1000 * 60 * 30
     }
 }
@@ -54,7 +54,7 @@ so there are zero dependencies to install or go stale.
 | `pageSize` | `20` | Number of articles requested per API call. |
 | `maxNewsItems` | `20` | Max number of articles kept in the local rotation. |
 | `updateInterval` | `1800000` (30 min) | How often to re-fetch from the Currents API. |
-| `rotateInterval` | `15000` (15 sec) | How often the on-screen article rotates. |
+| `slideDuration` | `20` | Seconds each article stays on screen before rotating to the next. |
 | `animationSpeed` | `1000` | Fade transition speed in ms. |
 | `showImage` | `true` | Show the article's thumbnail image, if available. |
 | `showDescription` | `true` | Show the article description/snippet. |
@@ -84,7 +84,7 @@ showing fewer articles than necessary.
 ## Rate limit math
 
 Free tier = 1,000 requests/day. This module only calls the API on `updateInterval`,
-not on `rotateInterval` (rotation just cycles through already-fetched articles
+not on `slideDuration` (rotation just cycles through already-fetched articles
 client-side). At the default 30-minute `updateInterval`, that's 48 requests/day —
 plenty of headroom.
 

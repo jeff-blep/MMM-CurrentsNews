@@ -22,7 +22,7 @@ Module.register("MMM-CurrentsNews", {
 
 		pageSize: 20,            // how many articles to fetch per request
 		updateInterval: 60 * 30 * 1000,   // how often to re-fetch from the API (30 min default)
-		rotateInterval: 1000 * 15,        // how often to flip to next article on screen
+		slideDuration: 20,       // seconds - how long each article stays on screen before rotating
 		animationSpeed: 1000,
 
 		maxNewsItems: 20,        // cap how many fetched articles we keep in rotation
@@ -77,7 +77,7 @@ Module.register("MMM-CurrentsNews", {
 		var self = this;
 		setInterval(function () {
 			self.rotateNews();
-		}, this.config.rotateInterval);
+		}, this.config.slideDuration * 1000);
 	},
 
 	getNews: function () {
