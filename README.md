@@ -60,12 +60,11 @@ so there are zero dependencies to install or go stale.
 | `showDescription` | `true` | Show the article description/snippet. |
 | `showSourceTitle` | `true` | Show the source domain (derived from the article URL). |
 | `showPublishDate` | `true` | Show a relative "x hours ago" timestamp. |
-| `truncDescription` | `200` | Max characters shown in the description before truncating. |
+| `orientation` | `"horizontal"` | `"horizontal"` (image beside text, 5 description lines) or `"vertical"` (image stacked on top of text at full column width, 8 description lines). Use `"vertical"` for narrow regions like `bottom_left`/`bottom_right` - a side-by-side image+text layout in a narrow column squeezes text into a thin strip regardless of line-clamp settings, so stacking gives text the full width to work with. |
 | `wrapTitle` | `true` | Wrap long titles instead of clipping them. |
 | `layoutMode` | `"big"` | `"big"` (cinematic, large type/image) or `"compact"` (smaller footprint). Matches MMM-MyPlex's naming convention. |
 | `cardLayout` | `"auto"` | `"auto"` (image side follows module position - left region shows image on the left, right region shows it on the right), `"left"`, or `"right"`. |
 | `articlesRequireImage` | `"yes"` | `"yes"` or `"no"`. When `"yes"` (default), articles without a real image URL are filtered out entirely before entering the display pool. |
-| `orientation` | `"horizontal"` | `"horizontal"` (5 lines of description shown) or `"vertical"` (8 lines). Matches MMM-MyPlex's naming convention. |
 
 ### Canonical Currents categories
 
